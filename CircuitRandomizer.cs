@@ -48,7 +48,23 @@ public class CircuitRandomizer : Randomizer
     List<GameObject> outsideRailList = new List<GameObject>
             {};
 
+
     
+
+    protected void placeRandomEdgeWire(){
+        int powerRailX = random.Next(50);  // randomly pick which part of the power rail to start the circuit
+
+        int powerRailY = random.Next(2); // randomly pick to start on outside or inside rail
+
+        if(powerRailY == 0){
+            var edgeWire = edgeCache.GetOrInstantiate(outsideRailList[random.Next(4)]);
+            edgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), outsideBottomRailY , wireZ);
+        }
+        else if(powerRailY == 1){
+            var edgeWire = edgeCache.GetOrInstantiate(insideRailList[random.Next(4)]);
+            edgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), insideBottomRailY , wireZ);
+        }
+    }
 
     /// <inheritdoc/> 
     protected override void OnAwake()
@@ -89,19 +105,7 @@ public class CircuitRandomizer : Randomizer
         breadboardInstance.transform.rotation = Quaternion.Euler(-180, 90, -90);
         breadboardInstance.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
         
-
-        int powerRailX = random.Next(50);  // randomly pick which part of the power rail to start the circuit
-
-        int powerRailY = random.Next(2); // randomly pick to start on outside or inside rail
-
-        if(powerRailY == 0){
-            var edgeWire = edgeCache.GetOrInstantiate(outsideRailList[random.Next(4)]);
-            edgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), outsideBottomRailY , wireZ);
-        }
-        else if(powerRailY == 1){
-            var edgeWire = edgeCache.GetOrInstantiate(insideRailList[random.Next(4)]);
-            edgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), insideBottomRailY , wireZ);
-        }
+        placeRandomEdgeWire();
     } 
 
     /// <summary>
