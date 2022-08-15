@@ -35,6 +35,21 @@ public class CircuitRandomizer : Randomizer
     float verticalHoleDistance = 0.635f; // y distance between each breadboard hole (3.532 - -3.461) / 11
     float horizontalHoleDistance =  0.635f;  // x distance between each breadboard hole (19.685 - -19.694) / 62 
 
+    float railRightX = 18.4f; //furthest right rail position x value
+
+    float insideBottomRailY =  -5.08f;  // inside rail on the bottom y value
+    float outsideBottomRailY = -5.74f;  // outside rail on the bottom y value
+    float wireZ = -0.26f;  //z value for all wires and resistors
+
+    //List to hold wires that fit from the inside power rail
+    List<GameObject> insideRailList = new List<GameObject>
+            {};
+    //List to hold wires that fit from the outside power rail
+    List<GameObject> outsideRailList = new List<GameObject>
+            {};
+
+    
+
     /// <inheritdoc/> 
     protected override void OnAwake()
     {
@@ -47,6 +62,18 @@ public class CircuitRandomizer : Randomizer
         edgeContainer.transform.parent = scenario.transform;
         edgeCache = new GameObjectOneWayCache(
             edgeContainer.transform, edgeWires.categories.Select(element => element.Item1).ToArray());
+
+        // Add the wires to the lists representing the wires allowed for certain positions
+        for (var i = 0; i < edgeWires.GetCategoryCount(); i++){
+            GameObject wire = edgeWires.GetCategory(i);
+            
+            if(wire.name != "Edge7mm"){  //7mm wire doesn't reach the middle holes from the outside power rail
+                outsideRailList.Add(wire);
+            }
+            if(wire.name != "Edge17mm"){ //17mm wire doesn't leave room on the middle vertical bus 
+                insideRailList.Add(wire);
+            }
+        }
     }
 
     /// <summary>
@@ -65,10 +92,16 @@ public class CircuitRandomizer : Randomizer
 
         int powerRailX = random.Next(50);  // randomly pick which part of the power rail to start the circuit
 
-        var bottomRail = edgeCache.GetOrInstantiate(edgeWires.Sample());
-        bottomRail.transform.position = new Vector3(18.4f - (((powerRailX/5)+powerRailX)*verticalHoleDistance), -5.74f , -0.26f);
+        int powerRailY = random.Next(2); // randomly pick to start on outside or inside rail
 
-        bottomRail.transform.rotation = Quaternion.Euler(0, 0, 0);
+        if(powerRailY == 0){
+            var edgeWire = edgeCache.GetOrInstantiate(outsideRailList[random.Next(4)]);
+            edgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), outsideBottomRailY , wireZ);
+        }
+        else if(powerRailY == 1){
+            var edgeWire = edgeCache.GetOrInstantiate(insideRailList[random.Next(4)]);
+            edgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), insideBottomRailY , wireZ);
+        }
     } 
 
     /// <summary>
