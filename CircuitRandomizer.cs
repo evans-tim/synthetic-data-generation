@@ -61,12 +61,14 @@ public class CircuitRandomizer : Randomizer
         breadboardInstance.transform.position = new Vector3(0, 0, 0);
         breadboardInstance.transform.rotation = Quaternion.Euler(-180, 90, -90);
         breadboardInstance.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
+        
 
+        int powerRailX = random.Next(50);  // randomly pick which part of the power rail to start the circuit
 
-        var positiveRailEdge = edgeCache.GetOrInstantiate(edgeWires.Sample());
-        positiveRailEdge.transform.position = new Vector3(18.4f, -5.08f , -0.26f);
+        var bottomRail = edgeCache.GetOrInstantiate(edgeWires.Sample());
+        bottomRail.transform.position = new Vector3(18.4f - (((powerRailX/5)+powerRailX)*verticalHoleDistance), -5.74f , -0.26f);
 
-        positiveRailEdge.transform.rotation = Quaternion.Euler(0, 0, 0);
+        bottomRail.transform.rotation = Quaternion.Euler(0, 0, 0);
     } 
 
     /// <summary>
