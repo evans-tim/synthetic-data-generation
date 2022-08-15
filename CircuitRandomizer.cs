@@ -23,13 +23,17 @@ public class CircuitRandomizer : Randomizer
     public GameObjectParameter breadboard;
     [Tooltip("The edge wires starting or terminating in the power rail")]
     public GameObjectParameter edgeWires;
+    [Tooltip("The middle wires starting and terminating in the middle section of breadboard")]
+    public GameObjectParameter middleWires;
 
     //GameObjects to be displayed
     GameObject breadboardContainer;
     GameObject edgeContainer;
+    GameObject middleContainer;
     //used to transform and rotate GameObjects
     GameObjectOneWayCache breadboardCache;
     GameObjectOneWayCache edgeCache;
+    GameObjectOneWayCache middleCache;
     
 
     float verticalHoleDistance = 0.635f; // y distance between each breadboard hole (3.532 - -3.461) / 11
@@ -41,6 +45,10 @@ public class CircuitRandomizer : Randomizer
     float outsideBottomRailY = -5.74f;  // outside rail on the bottom y value
     float wireZ = -0.26f;  //z value for all wires and resistors
 
+    // lower left reference for placing middle wires
+    float  middleBottomLeftX = -19.67f;  
+    float middleBottomLeftY = -3.49f;  
+
     //List to hold wires that fit from the inside power rail
     List<GameObject> insideRailList = new List<GameObject>
             {};
@@ -49,7 +57,23 @@ public class CircuitRandomizer : Randomizer
             {};
 
 
-    
+    /// <summary>
+    /// Method <c>placeMiddleWire()</c> 
+    /// Places a wire in one of the options in the 63x10 breadboard grid
+    /// </summary>
+    /// <param name="x"> integer between 0-62</param>
+    /// <param name="y"> integer between 0-9</param>
+    /// <returns> void </returns>
+    protected void placeMiddleWire(GameObject wire, int x, int y){
+        Debug.Log(wire.name);
+        Debug.Log(x);
+        Debug.Log(y);
+        if(y > 4){ //offset for the center line of breadboard where there are no holes 
+            y = y + 2;
+        }
+        wire.transform.position = new Vector3(middleBottomLeftX + (horizontalHoleDistance*x), middleBottomLeftY + (verticalHoleDistance*y), wireZ);
+        wire.transform.rotation = Quaternion.Euler(0, 0, -180);  // ensure rotated properly
+    }
 
     protected void placeRandomEdgeWire(){
         int powerRailX = random.Next(50);  // randomly pick which part of the power rail to start the circuit
@@ -75,9 +99,14 @@ public class CircuitRandomizer : Randomizer
         breadboardContainer.transform, breadboard.categories.Select(element => element.Item1).ToArray());  
 
         edgeContainer = new GameObject("Edge Wires");
-        edgeContainer.transform.parent = scenario.transform;
+        edgeContainer.transform.parent = scenario.transform;  // transform relative to the fixed length scenario
         edgeCache = new GameObjectOneWayCache(
             edgeContainer.transform, edgeWires.categories.Select(element => element.Item1).ToArray());
+
+        middleContainer = new GameObject("Middle Wires");
+        middleContainer.transform.parent = scenario.transform;  // transform relative to the fixed length scenario
+        middleCache = new GameObjectOneWayCache(
+            middleContainer.transform, middleWires.categories.Select(element => element.Item1).ToArray()); 
 
         // Add the wires to the lists representing the wires allowed for certain positions
         for (var i = 0; i < edgeWires.GetCategoryCount(); i++){
@@ -106,6 +135,11 @@ public class CircuitRandomizer : Randomizer
         breadboardInstance.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
         
         placeRandomEdgeWire();
+        
+        var middleWire = middleCache.GetOrInstantiate(middleWires.Sample());
+        int x = random.Next(63);
+        int y = random.Next(10);
+        placeMiddleWire(middleWire, x, y);
     } 
 
     /// <summary>
@@ -115,5 +149,6 @@ public class CircuitRandomizer : Randomizer
     {
      breadboardCache.ResetAllObjects();
      edgeCache.ResetAllObjects();
+     middleCache.ResetAllObjects();
     }
 }
