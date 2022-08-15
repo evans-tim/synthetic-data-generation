@@ -21,17 +21,19 @@ public class CircuitRandomizer : Randomizer
 
     [Tooltip("The breadboard to be placed by this Randomizer.")]
     public GameObjectParameter breadboard;
+    [Tooltip("The edge wires starting or terminating in the power rail")]
+    public GameObjectParameter edgeWires;
 
     //GameObjects to be displayed
     GameObject breadboardContainer;
-
+    GameObject edgeContainer;
     //used to transform and rotate GameObjects
     GameObjectOneWayCache breadboardCache;
-
+    GameObjectOneWayCache edgeCache;
     
 
-    float verticalHoleDistance = 0.63572f; // y distance between each breadboard hole (3.532 - -3.461) / 11
-    float horizontalHoleDistance =  0.63514516129f;  // x distance between each breadboard hole (19.685 - -19.694) / 62 
+    float verticalHoleDistance = 0.635f; // y distance between each breadboard hole (3.532 - -3.461) / 11
+    float horizontalHoleDistance =  0.635f;  // x distance between each breadboard hole (19.685 - -19.694) / 62 
 
     /// <inheritdoc/> 
     protected override void OnAwake()
@@ -40,6 +42,11 @@ public class CircuitRandomizer : Randomizer
         breadboardContainer.transform.parent = scenario.transform;  // transform relative to the fixed length scenario
         breadboardCache = new GameObjectOneWayCache(
         breadboardContainer.transform, breadboard.categories.Select(element => element.Item1).ToArray());  
+
+        edgeContainer = new GameObject("Edge Wires");
+        edgeContainer.transform.parent = scenario.transform;
+        edgeCache = new GameObjectOneWayCache(
+            edgeContainer.transform, edgeWires.categories.Select(element => element.Item1).ToArray());
     }
 
     /// <summary>
@@ -54,7 +61,13 @@ public class CircuitRandomizer : Randomizer
         breadboardInstance.transform.position = new Vector3(0, 0, 0);
         breadboardInstance.transform.rotation = Quaternion.Euler(-180, 90, -90);
         breadboardInstance.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
-    }
+
+
+        var positiveRailEdge = edgeCache.GetOrInstantiate(edgeWires.Sample());
+        positiveRailEdge.transform.position = new Vector3(18.4f, -5.08f , -0.26f);
+
+        positiveRailEdge.transform.rotation = Quaternion.Euler(0, 0, 0);
+    } 
 
     /// <summary>
     /// Deletes generated foreground objects after each scenario iteration is complete
@@ -62,5 +75,6 @@ public class CircuitRandomizer : Randomizer
     protected override void OnIterationEnd()
     {
      breadboardCache.ResetAllObjects();
+     edgeCache.ResetAllObjects();
     }
 }
