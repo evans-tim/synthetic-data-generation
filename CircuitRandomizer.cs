@@ -30,6 +30,7 @@ public class CircuitRandomizer : Randomizer
     GameObject breadboardContainer;
     GameObject edgeContainer;
     GameObject middleContainer;
+    
     //used to transform and rotate GameObjects
     GameObjectOneWayCache breadboardCache;
     GameObjectOneWayCache edgeCache;
@@ -43,6 +44,8 @@ public class CircuitRandomizer : Randomizer
 
     float insideBottomRailY =  -5.08f;  // inside rail on the bottom y value
     float outsideBottomRailY = -5.74f;  // outside rail on the bottom y value
+    float insideTopRailY =  5.08f;  // inside rail on the bottom y value
+    float outsideTopRailY = 5.74f;  // outside rail on the bottom y value
     float wireZ = -0.26f;  //z value for all wires and resistors
 
     // lower left reference for placing middle wires
@@ -75,20 +78,71 @@ public class CircuitRandomizer : Randomizer
         wire.transform.rotation = Quaternion.Euler(0, 0, -180);  // ensure rotated properly
     }
 
-    protected void placeRandomEdgeWire(){
+    protected int placeRandomBottomEdgeWire(){
+        int powerRailX = random.Next(50);  // randomly pick which part of the power rail to start the circuit
+
+        var bottomEdgeWire = edgeCache.GetOrInstantiate(outsideRailList[random.Next(4)]);
+        bottomEdgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), outsideBottomRailY , wireZ);
+        bottomEdgeWire.transform.rotation = Quaternion.Euler(0, 0, 0);
+        
+		int adjusted = ((powerRailX/5)+powerRailX) + 2;
+		return adjusted;
+    }
+
+    protected void placeRandomTopEdgeWire(){
         int powerRailX = random.Next(50);  // randomly pick which part of the power rail to start the circuit
 
         int powerRailY = random.Next(2); // randomly pick to start on outside or inside rail
 
         if(powerRailY == 0){
-            var edgeWire = edgeCache.GetOrInstantiate(outsideRailList[random.Next(4)]);
-            edgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), outsideBottomRailY , wireZ);
+            var topEdgeWire = edgeCache.GetOrInstantiate(outsideRailList[random.Next(4)]);
+            topEdgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), outsideTopRailY , wireZ);
+            // flip upside down
+            topEdgeWire.transform.rotation = Quaternion.Euler(0, 0, 180);
         }
         else if(powerRailY == 1){
-            var edgeWire = edgeCache.GetOrInstantiate(insideRailList[random.Next(4)]);
-            edgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), insideBottomRailY , wireZ);
+            var topEdgeWire = edgeCache.GetOrInstantiate(insideRailList[random.Next(4)]);
+            topEdgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), insideTopRailY , wireZ);
+            // flip upside down
+            topEdgeWire.transform.rotation = Quaternion.Euler(0, 0, 180);
         }
     }
+
+    protected static int[,] visitHoles(int[,] visited, int startingX, int startingY, int wireLength, int direction){
+		visited[startingX,startingY] = 1;
+		if(direction == 0) { // North
+			for(int i = 0; i < wireLength; i++){
+				visited[startingX, startingY + i] = 1;
+			}
+		}
+		else if(direction == 1){ //East
+		}
+		else if(direction == 2){ //South
+		}
+		else if(direction == 3){ //West
+		}
+		else{
+			throw new Exception("Invalid direction was chosen");
+		}
+		return visited;
+	}
+
+    protected static void printVisited(int[,] visited){
+        string visitedStr = "";
+		for(int i = visited.GetLength(1) - 1; i >= 0 ; i--){
+			for(int j = 0; j < visited.GetLength(0); j++){
+				// Debug.Log(visited[j,i]);
+                int hole = visited[j,i];
+                visitedStr += hole.ToString();
+			}
+			Debug.Log("\n");
+            visitedStr += "\n";
+			if(i == 5){
+				visitedStr += "\n\n";
+			}
+		}
+        Debug.Log(visitedStr);
+	}
 
     /// <inheritdoc/> 
     protected override void OnAwake()
@@ -127,19 +181,22 @@ public class CircuitRandomizer : Randomizer
     /// </summary>
     protected override void OnIterationStart()
     {  
+        int[,] visited = new int[63,10];
         Debug.Log(breadboard.GetCategoryCount());
         //place and scale breadboard 
         var breadboardInstance = breadboardCache.GetOrInstantiate(breadboard.Sample()); 
         breadboardInstance.transform.position = new Vector3(0, 0, 0);
-        breadboardInstance.transform.rotation = Quaternion.Euler(-180, 90, -90);
+        breadboardInstance.transform.rotation = Quaternion.Euler(0, 90, -90);
         breadboardInstance.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
         
-        placeRandomEdgeWire();
+        int bottomPlacement = placeRandomBottomEdgeWire();
+        visitHoles(visited, bottomPlacement, 0, 3, 0);
+		printVisited(visited);
         
         var middleWire = middleCache.GetOrInstantiate(middleWires.Sample());
         int x = random.Next(63);
         int y = random.Next(10);
-        placeMiddleWire(middleWire, x, y);
+        placeMiddleWire(middleWire, 1, 1);
     } 
 
     /// <summary>
