@@ -59,6 +59,73 @@ public class CircuitRandomizer : Randomizer
     List<GameObject> outsideRailList = new List<GameObject>
             {};
 
+    Dictionary<string, int> outsideRailLengthDict =  
+              new Dictionary<string, int>(){
+                                  {"Edge10mm", 1},
+                                  {"Edge12mm", 2},
+                                  {"Edge15mm", 3},
+                                  {"Edge17mm", 4}, };
+
+    Dictionary<string, int> middleWireLengthDict =  // the length is the number of holes the wire spans - 1 since a wire length of n starting at position x would terminate at position x + n - 1
+              new Dictionary<string, int>(){
+                                  {"2mm63", 1},
+                                  {"5mm63", 2},
+                                  {"7mm63", 3},
+                                  {"10mm63", 4},
+                                  {"12mm63", 5},
+                                  {"15mm63", 6},
+                                  {"17mm63", 7},
+                                  {"20mm63", 8},
+                                  {"22mm63", 9},
+                                   };
+
+    /// <summary>
+    /// Method <c>checkBoundary()</c> 
+    /// Checks to see if a wire will stay on breadboard or cross the middle gap correctly.
+    /// </summary>
+    protected bool isInsideBoundary(int xPos, int yPos, int length, int direction){
+        if (direction == 0) { // South
+           return false;
+        }
+        else if(direction == 1){ // East
+            if(xPos + length > 62){
+                return false;
+            }
+            else{
+                return true;
+            }
+            
+        }
+        else if(direction == 2){ //North
+            if(yPos >= 0 && yPos <= 4){
+                int newYPos = yPos + length - 2 ; //there is a two space gap in the middle of the breadboard and
+                bool reachesNextSection = (newYPos >=5 && newYPos <= 8); // needs to have at least 1 leftover space for another wire
+                if(reachesNextSection){
+                    return true;
+                }
+                else{
+                    return false;
+                }
+
+            }
+            else{
+                return false;
+            }
+		}
+		else if(direction == 3){ //West
+            if(xPos - length < 0){
+                return false;
+            }
+            else{
+                return true;
+            }
+		}
+		else{
+			throw new Exception("Invalid direction was chosen");
+            return false;
+		}
+            
+    }
 
     /// <summary>
     /// Method <c>placeMiddleWire()</c> 
@@ -74,50 +141,58 @@ public class CircuitRandomizer : Randomizer
         if(y > 4){ //offset for the center line of breadboard where there are no holes 
             y = y + 2;
         }
+
+        int wireLength = middleWireLengthDict[wire.name.Replace("(Clone)", "")];
+        int direction =  1 + random.Next(3); 
+
+        Debug.Log("X: " + x.ToString());
+        Debug.Log("Y: " + y.ToString());
+        Debug.Log("Direction: " + direction.ToString());
+        Debug.Log("Wire Length: " + wireLength.ToString());
+        while(!isInsideBoundary(x, y, wireLength, direction)){
+            Debug.Log("Outside");
+            direction =  1 + random.Next(3); 
+        }
+
+        
+
+
         wire.transform.position = new Vector3(middleBottomLeftX + (horizontalHoleDistance*x), middleBottomLeftY + (verticalHoleDistance*y), wireZ);
-        wire.transform.rotation = Quaternion.Euler(0, 0, -180);  // ensure rotated properly
+        wire.transform.rotation = Quaternion.Euler(0, 0, 90*direction);  // ensure rotated properly
     }
 
-    protected int placeRandomBottomEdgeWire(){
+    protected int[] placeRandomBottomEdgeWire(int[,] visited){
         int powerRailX = random.Next(50);  // randomly pick which part of the power rail to start the circuit
+
+        int holeNumber = ((powerRailX/5)+powerRailX) + 2; // hole number out of 63 that aligns with the railNumber
 
         var bottomEdgeWire = edgeCache.GetOrInstantiate(outsideRailList[random.Next(4)]);
-        bottomEdgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), outsideBottomRailY , wireZ);
+        bottomEdgeWire.transform.position = new Vector3(middleBottomLeftX +  ((holeNumber)*verticalHoleDistance), outsideBottomRailY , wireZ);
         bottomEdgeWire.transform.rotation = Quaternion.Euler(0, 0, 0);
-        
-		int adjusted = ((powerRailX/5)+powerRailX) + 2;
-		return adjusted;
+       
+        int numHolesOccupied = outsideRailLengthDict[bottomEdgeWire.name.Replace("(Clone)", "")];
+        visitHoles(visited, holeNumber, 0, numHolesOccupied, 0);
+
+        int[] placement = new int[2];
+        placement[0] = holeNumber;
+        placement[1] = numHolesOccupied;
+		
+		return placement;
     }
 
-    protected void placeRandomTopEdgeWire(){
-        int powerRailX = random.Next(50);  // randomly pick which part of the power rail to start the circuit
-
-        int powerRailY = random.Next(2); // randomly pick to start on outside or inside rail
-
-        if(powerRailY == 0){
-            var topEdgeWire = edgeCache.GetOrInstantiate(outsideRailList[random.Next(4)]);
-            topEdgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), outsideTopRailY , wireZ);
-            // flip upside down
-            topEdgeWire.transform.rotation = Quaternion.Euler(0, 0, 180);
-        }
-        else if(powerRailY == 1){
-            var topEdgeWire = edgeCache.GetOrInstantiate(insideRailList[random.Next(4)]);
-            topEdgeWire.transform.position = new Vector3(railRightX - (((powerRailX/5)+powerRailX)*verticalHoleDistance), insideTopRailY , wireZ);
-            // flip upside down
-            topEdgeWire.transform.rotation = Quaternion.Euler(0, 0, 180);
-        }
-    }
 
     protected static int[,] visitHoles(int[,] visited, int startingX, int startingY, int wireLength, int direction){
 		visited[startingX,startingY] = 1;
-		if(direction == 0) { // North
-			for(int i = 0; i < wireLength; i++){
-				visited[startingX, startingY + i] = 1;
-			}
+		if(direction == 0) { // South
+			
 		}
 		else if(direction == 1){ //East
+            
 		}
-		else if(direction == 2){ //South
+		else if(direction == 2){ //North
+            for(int i = 0; i < wireLength; i++){
+				visited[startingX, startingY + i] = 1;
+			}
 		}
 		else if(direction == 3){ //West
 		}
@@ -135,10 +210,9 @@ public class CircuitRandomizer : Randomizer
                 int hole = visited[j,i];
                 visitedStr += hole.ToString();
 			}
-			Debug.Log("\n");
-            visitedStr += "\n";
+            visitedStr += " end ";
 			if(i == 5){
-				visitedStr += "\n\n";
+				visitedStr += " middle ";
 			}
 		}
         Debug.Log(visitedStr);
@@ -189,14 +263,19 @@ public class CircuitRandomizer : Randomizer
         breadboardInstance.transform.rotation = Quaternion.Euler(0, 90, -90);
         breadboardInstance.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
         
-        int bottomPlacement = placeRandomBottomEdgeWire();
-        visitHoles(visited, bottomPlacement, 0, 3, 0);
+        int[] firstPlacement = placeRandomBottomEdgeWire(visited);
+        
 		printVisited(visited);
+
+        int currentPosition = firstPlacement[0];
+        int holesTaken = firstPlacement[1];
+        int nextY = 4 - random.Next(5 - holesTaken);
+        
         
         var middleWire = middleCache.GetOrInstantiate(middleWires.Sample());
         int x = random.Next(63);
         int y = random.Next(10);
-        placeMiddleWire(middleWire, 1, 1);
+        placeMiddleWire(middleWire, currentPosition, nextY);
     } 
 
     /// <summary>
