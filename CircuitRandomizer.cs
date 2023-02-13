@@ -152,6 +152,8 @@ public class CircuitRandomizer : Randomizer
         while(!isInsideBoundary(x, y, wireLength, direction)){
             Debug.Log("Outside");
             direction =  1 + random.Next(3); 
+            wire = middleCache.GetOrInstantiate(middleWires.Sample());
+            wireLength = middleWireLengthDict[wire.name.Replace("(Clone)", "")];
         }
 
         
