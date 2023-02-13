@@ -68,15 +68,15 @@ public class CircuitRandomizer : Randomizer
 
     Dictionary<string, int> middleWireLengthDict =  // the length is the number of holes the wire spans - 1 since a wire length of n starting at position x would terminate at position x + n - 1
               new Dictionary<string, int>(){
-                                  {"2mm63", 1},
-                                  {"5mm63", 2},
-                                  {"7mm63", 3},
-                                  {"10mm63", 4},
-                                  {"12mm63", 5},
-                                  {"15mm63", 6},
-                                  {"17mm63", 7},
-                                  {"20mm63", 8},
-                                  {"22mm63", 9},
+                                  {"2mm63", 2},
+                                  {"5mm63", 3},
+                                  {"7mm63", 4},
+                                  {"10mm63", 5},
+                                  {"12mm63", 6},
+                                  {"15mm63", 7},
+                                  {"17mm63", 8},
+                                  {"20mm63", 9},
+                                  {"22mm63", 10},
                                    };
 
     /// <summary>
@@ -134,7 +134,7 @@ public class CircuitRandomizer : Randomizer
     /// <param name="x"> integer between 0-62</param>
     /// <param name="y"> integer between 0-9</param>
     /// <returns> void </returns>
-    protected void placeMiddleWire(GameObject wire, int x, int y){
+    protected void placeMiddleWire(int[,] visited, GameObject wire, int x, int y){
         Debug.Log(wire.name);
         Debug.Log(x);
         Debug.Log(y);
@@ -156,7 +156,9 @@ public class CircuitRandomizer : Randomizer
             wireLength = middleWireLengthDict[wire.name.Replace("(Clone)", "")];
         }
 
-        
+        visitHoles(visited, x, y, wireLength, direction);
+
+        printVisited(visited);
 
 
         wire.transform.position = new Vector3(middleBottomLeftX + (horizontalHoleDistance*x), middleBottomLeftY + (verticalHoleDistance*y), wireZ);
@@ -173,7 +175,7 @@ public class CircuitRandomizer : Randomizer
         bottomEdgeWire.transform.rotation = Quaternion.Euler(0, 0, 0);
        
         int numHolesOccupied = outsideRailLengthDict[bottomEdgeWire.name.Replace("(Clone)", "")];
-        visitHoles(visited, holeNumber, 0, numHolesOccupied, 0);
+        visitHoles(visited, holeNumber, 0, numHolesOccupied, 2);
 
         int[] placement = new int[2];
         placement[0] = holeNumber;
@@ -185,18 +187,31 @@ public class CircuitRandomizer : Randomizer
 
     protected static int[,] visitHoles(int[,] visited, int startingX, int startingY, int wireLength, int direction){
 		visited[startingX,startingY] = 1;
+        Debug.Log("VISITING");
+        Debug.Log("X: " + startingX.ToString());
+        Debug.Log("Y: " + startingY.ToString());
+        Debug.Log("Direction: " + direction.ToString());
+        Debug.Log("Wire Length: " + wireLength.ToString());
 		if(direction == 0) { // South
 			
 		}
 		else if(direction == 1){ //East
-            
+            for(int i = 0; i < wireLength; i++){
+				visited[startingX + i, startingY] = 1;
+			}
 		}
 		else if(direction == 2){ //North
+            if(startingY + wireLength >= 7){ //offset for the center line of breadboard where there are no holes 
+                wireLength = wireLength - 2;
+            }
             for(int i = 0; i < wireLength; i++){
 				visited[startingX, startingY + i] = 1;
 			}
 		}
 		else if(direction == 3){ //West
+            for(int i = 0; i < wireLength; i++){
+				visited[startingX - i, startingY] = 1;
+			}
 		}
 		else{
 			throw new Exception("Invalid direction was chosen");
@@ -277,7 +292,7 @@ public class CircuitRandomizer : Randomizer
         var middleWire = middleCache.GetOrInstantiate(middleWires.Sample());
         int x = random.Next(63);
         int y = random.Next(10);
-        placeMiddleWire(middleWire, currentPosition, nextY);
+        placeMiddleWire(visited, middleWire, currentPosition, nextY);
     } 
 
     /// <summary>
