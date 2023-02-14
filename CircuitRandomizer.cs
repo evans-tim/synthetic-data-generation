@@ -40,12 +40,12 @@ public class CircuitRandomizer : Randomizer
     float verticalHoleDistance = 0.635f; // y distance between each breadboard hole (3.532 - -3.461) / 11
     float horizontalHoleDistance =  0.635f;  // x distance between each breadboard hole (19.685 - -19.694) / 62 
 
-    float railRightX = 18.4f; //furthest right rail position x value
+    // float railRightX = 18.4f; //furthest right rail position x value
 
-    float insideBottomRailY =  -5.08f;  // inside rail on the bottom y value
+    // float insideBottomRailY =  -5.08f;  // inside rail on the bottom y value
     float outsideBottomRailY = -5.74f;  // outside rail on the bottom y value
-    float insideTopRailY =  5.08f;  // inside rail on the bottom y value
-    float outsideTopRailY = 5.74f;  // outside rail on the bottom y value
+    // float insideTopRailY =  5.08f;  // inside rail on the bottom y value
+    // float outsideTopRailY = 5.74f;  // outside rail on the bottom y value
     float wireZ = -0.26f;  //z value for all wires and resistors
 
     // lower left reference for placing middle wires
@@ -66,7 +66,7 @@ public class CircuitRandomizer : Randomizer
                                   {"Edge15mm", 3},
                                   {"Edge17mm", 4}, };
 
-    Dictionary<string, int> middleWireLengthDict =  // the length is the number of holes the wire spans - 1 since a wire length of n starting at position x would terminate at position x + n - 1
+    Dictionary<string, int> middleWireLengthDict =  
               new Dictionary<string, int>(){
                                   {"2mm63", 2},
                                   {"5mm63", 3},
@@ -98,7 +98,7 @@ public class CircuitRandomizer : Randomizer
         }
         else if(direction == 2){ //North
             if(yPos >= 0 && yPos <= 4){
-                int newYPos = yPos + length - 2 ; //there is a two space gap in the middle of the breadboard and
+                int newYPos = yPos - 2 + length - 1 ; //there is a two space gap in the middle of the breadboard and the length is the number of holes the wire spans - 1 since a wire length of n starting at position x would terminate at position x + n - 1
                 bool reachesNextSection = (newYPos >=5 && newYPos <= 8); // needs to have at least 1 leftover space for another wire
                 if(reachesNextSection){
                     return true;
@@ -122,7 +122,6 @@ public class CircuitRandomizer : Randomizer
 		}
 		else{
 			throw new Exception("Invalid direction was chosen");
-            return false;
 		}
             
     }
@@ -133,36 +132,59 @@ public class CircuitRandomizer : Randomizer
     /// </summary>
     /// <param name="x"> integer between 0-62</param>
     /// <param name="y"> integer between 0-9</param>
-    /// <returns> void </returns>
-    protected void placeMiddleWire(int[,] visited, GameObject wire, int x, int y){
-        Debug.Log(wire.name);
-        Debug.Log(x);
-        Debug.Log(y);
-        if(y > 4){ //offset for the center line of breadboard where there are no holes 
-            y = y + 2;
-        }
+    /// <returns> int[] </returns>
+    protected int[] placeMiddleWire(int[,] visited, GameObject wire, int x, int y){
+        // Debug.Log(wire.name);
+        // Debug.Log(x);
+        // Debug.Log(y);
+        
 
         int wireLength = middleWireLengthDict[wire.name.Replace("(Clone)", "")];
         int direction =  1 + random.Next(3); 
 
-        Debug.Log("X: " + x.ToString());
-        Debug.Log("Y: " + y.ToString());
-        Debug.Log("Direction: " + direction.ToString());
-        Debug.Log("Wire Length: " + wireLength.ToString());
-        while(!isInsideBoundary(x, y, wireLength, direction)){
-            Debug.Log("Outside");
-            direction =  1 + random.Next(3); 
-            wire = middleCache.GetOrInstantiate(middleWires.Sample());
-            wireLength = middleWireLengthDict[wire.name.Replace("(Clone)", "")];
-        }
+        // Debug.Log("X: " + x.ToString());
+        // Debug.Log("Y: " + y.ToString());
+        // Debug.Log("Direction: " + direction.ToString());
+        // Debug.Log("Wire Length: " + wireLength.ToString()); 
+        
+        
+        int[] placement = new int[2];
+        placement[0] = x;
+        placement[1] = y;
 
-        visitHoles(visited, x, y, wireLength, direction);
+        int attempts = 0;
+
+        while((placement[0] == x && placement[1] == y) && attempts < 10) {//wires overlapped
+            //get a placement that is inside the boundaries
+            while(!isInsideBoundary(x, y, wireLength, direction)){
+                // Debug.Log("Outside");
+                direction =  1 + random.Next(3); 
+                wire = middleCache.GetOrInstantiate(middleWires.Sample());
+                wireLength = middleWireLengthDict[wire.name.Replace("(Clone)", "")];
+            }
+            //check to see if placement overlaps
+            placement = visitHoles(visited, x, y, wireLength, direction);
+            attempts = attempts + 1;
+        }
+        
+        
+       
+
+        if(!(placement[0] == x && placement[1] == y)){  //new placement was found, place the wire
+            if(y > 4){ //offset for the center line of breadboard where there are no holes 
+                y = y + 2;
+            }
+
+            wire.transform.position = new Vector3(middleBottomLeftX + (horizontalHoleDistance*x), middleBottomLeftY + (verticalHoleDistance*y), wireZ);
+            wire.transform.rotation = Quaternion.Euler(0, 0, 90*direction);  // ensure rotated properly
+        }
 
         printVisited(visited);
 
+        
 
-        wire.transform.position = new Vector3(middleBottomLeftX + (horizontalHoleDistance*x), middleBottomLeftY + (verticalHoleDistance*y), wireZ);
-        wire.transform.rotation = Quaternion.Euler(0, 0, 90*direction);  // ensure rotated properly
+		
+		return placement;
     }
 
     protected int[] placeRandomBottomEdgeWire(int[,] visited){
@@ -185,45 +207,85 @@ public class CircuitRandomizer : Randomizer
     }
 
 
-    protected static int[,] visitHoles(int[,] visited, int startingX, int startingY, int wireLength, int direction){
-		visited[startingX,startingY] = 1;
-        Debug.Log("VISITING");
-        Debug.Log("X: " + startingX.ToString());
-        Debug.Log("Y: " + startingY.ToString());
-        Debug.Log("Direction: " + direction.ToString());
-        Debug.Log("Wire Length: " + wireLength.ToString());
+    // returns ending x and y. if it overlapped, returns the original x and y
+    protected static int[] visitHoles(int[,] visited, int startingX, int startingY, int wireLength, int direction){
+		// visited[startingX,startingY] = 1;
+        // Debug.Log("VISITING");
+        // Debug.Log("X: " + startingX.ToString());
+        // Debug.Log("Y: " + startingY.ToString());
+        // Debug.Log("Direction: " + direction.ToString());
+        // Debug.Log("Wire Length: " + wireLength.ToString());
+
+        int endingX = startingX;
+        int endingY = startingY;
+
+        int[,] attemptVisit = new int[63, 10];
+
+        Array.Copy(visited, attemptVisit, 630);
+
+        bool wireOverlaps = false;
+
 		if(direction == 0) { // South
 			
 		}
 		else if(direction == 1){ //East
             for(int i = 0; i < wireLength; i++){
-				visited[startingX + i, startingY] = 1;
+                if(attemptVisit[startingX + i, startingY] == 1){
+                    wireOverlaps = true;
+                }
+				attemptVisit[startingX + i, startingY] = 1;
 			}
+            endingX = startingX + wireLength - 1;
 		}
 		else if(direction == 2){ //North
             if(startingY + wireLength >= 7){ //offset for the center line of breadboard where there are no holes 
                 wireLength = wireLength - 2;
             }
             for(int i = 0; i < wireLength; i++){
-				visited[startingX, startingY + i] = 1;
+                if(attemptVisit[startingX, startingY + i] == 1){
+                    wireOverlaps = true;
+                }
+				attemptVisit[startingX, startingY + i] = 1;
 			}
+            endingY = startingY + wireLength - 1;
+
 		}
 		else if(direction == 3){ //West
             for(int i = 0; i < wireLength; i++){
-				visited[startingX - i, startingY] = 1;
+                if(attemptVisit[startingX - i, startingY] == 1){
+                    wireOverlaps = true;
+                }
+				attemptVisit[startingX - i, startingY] = 1;
 			}
+            endingX = startingX - wireLength + 1;
 		}
 		else{
 			throw new Exception("Invalid direction was chosen");
 		}
-		return visited;
+
+        int[] endingPlacement = new int[2];
+        if(!wireOverlaps){
+            // Debug.Log("WIRE DOESN'T OVERLAP");
+            Array.Copy(attemptVisit, visited , 630);
+            endingPlacement[0] = endingX;
+            endingPlacement[1] = endingY;
+        }
+        else{
+            // Debug.Log("WIRE OVERLAPS");
+            endingPlacement[0] = startingX;
+            endingPlacement[1] = startingY;
+        }
+        
+       
+        
+		return endingPlacement;
 	}
 
     protected static void printVisited(int[,] visited){
         string visitedStr = "";
 		for(int i = visited.GetLength(1) - 1; i >= 0 ; i--){
 			for(int j = 0; j < visited.GetLength(0); j++){
-				// Debug.Log(visited[j,i]);
+				//Debug.Log(visited[j,i]);
                 int hole = visited[j,i];
                 visitedStr += hole.ToString();
 			}
@@ -232,7 +294,7 @@ public class CircuitRandomizer : Randomizer
 				visitedStr += " middle ";
 			}
 		}
-        Debug.Log(visitedStr);
+        // Debug.Log(visitedStr);
 	}
 
     /// <inheritdoc/> 
@@ -273,7 +335,7 @@ public class CircuitRandomizer : Randomizer
     protected override void OnIterationStart()
     {  
         int[,] visited = new int[63,10];
-        Debug.Log(breadboard.GetCategoryCount());
+        // Debug.Log(breadboard.GetCategoryCount());
         //place and scale breadboard 
         var breadboardInstance = breadboardCache.GetOrInstantiate(breadboard.Sample()); 
         breadboardInstance.transform.position = new Vector3(0, 0, 0);
@@ -290,9 +352,45 @@ public class CircuitRandomizer : Randomizer
         
         
         var middleWire = middleCache.GetOrInstantiate(middleWires.Sample());
-        int x = random.Next(63);
-        int y = random.Next(10);
-        placeMiddleWire(visited, middleWire, currentPosition, nextY);
+        int[] endingPlacement = placeMiddleWire(visited, middleWire, currentPosition, nextY);
+        int[] lastEndingPlacement = new int[2];
+        // Debug.Log("Ending Placement 1:");
+        // Debug.Log(endingPlacement[0]);
+        // Debug.Log(endingPlacement[1]);
+
+        int maxWires = 15;
+        for(int i = 0; i < maxWires; i++){
+            if(endingPlacement[1] < 5){ // bottom half
+                nextY = random.Next(5);
+                while(nextY == endingPlacement[1]){ //ensure the selection of a different hole than when the last wire terminated
+                    nextY = random.Next(5);
+                }
+                
+            }
+            else{ // top half
+                nextY = 5 + random.Next(5);
+                while(nextY == endingPlacement[1]){
+                    nextY = 5 + random.Next(5);
+                }
+            }
+            middleWire = middleCache.GetOrInstantiate(middleWires.Sample());
+            endingPlacement = placeMiddleWire(visited, middleWire, endingPlacement[0], nextY);
+            if(endingPlacement[0] == lastEndingPlacement[0] && endingPlacement[1] == lastEndingPlacement[1]){
+                Debug.Log("Couldn't find placement");
+                i = maxWires;
+            }
+            lastEndingPlacement = endingPlacement;
+            // Debug.Log("Last Ending Placement " + i.ToString());
+            // Debug.Log(lastEndingPlacement[0]);
+            // Debug.Log(lastEndingPlacement[1]);
+            // Debug.Log("New Ending Placement " + i.ToString());
+            // Debug.Log(endingPlacement[0]);
+            // Debug.Log(endingPlacement[1]);
+        }
+
+       
+        
+
     } 
 
     /// <summary>
