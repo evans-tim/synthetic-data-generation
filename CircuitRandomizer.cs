@@ -45,7 +45,7 @@ public class CircuitRandomizer : Randomizer
     // float insideBottomRailY =  -5.08f;  // inside rail on the bottom y value
     float outsideBottomRailY = -5.74f;  // outside rail on the bottom y value
     // float insideTopRailY =  5.08f;  // inside rail on the bottom y value
-    // float outsideTopRailY = 5.74f;  // outside rail on the bottom y value
+    float outsideTopRailY = 5.70f;  // outside rail on the bottom y value
     float wireZ = -0.26f;  //z value for all wires and resistors
 
     // lower left reference for placing middle wires
@@ -71,13 +71,17 @@ public class CircuitRandomizer : Randomizer
                                   {"2mm63", 2},
                                   {"5mm63", 3},
                                   {"7mm63", 4},
-                                  {"10mm63", 5},
+                                  {"resistor63v3", 5},
                                   {"12mm63", 6},
                                   {"15mm63", 7},
                                   {"17mm63", 8},
                                   {"20mm63", 9},
                                   {"22mm63", 10},
                                    };
+
+    int[] lengthWeights = new int[35] {
+        2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10,
+    };
 
     /// <summary>
     /// Method <c>checkBoundary()</c> 
@@ -125,96 +129,12 @@ public class CircuitRandomizer : Randomizer
 		}
             
     }
-
-    /// <summary>
-    /// Method <c>placeMiddleWire()</c> 
-    /// Places a wire in one of the options in the 63x10 breadboard grid
-    /// </summary>
-    /// <param name="x"> integer between 0-62</param>
-    /// <param name="y"> integer between 0-9</param>
-    /// <returns> int[] </returns>
-    protected int[] placeMiddleWire(int[,] visited, GameObject wire, int x, int y){
-        // Debug.Log(wire.name);
-        // Debug.Log(x);
-        // Debug.Log(y);
-        
-
-        int wireLength = middleWireLengthDict[wire.name.Replace("(Clone)", "")];
-        int direction =  1 + random.Next(3); 
-
-        // Debug.Log("X: " + x.ToString());
-        // Debug.Log("Y: " + y.ToString());
-        // Debug.Log("Direction: " + direction.ToString());
-        // Debug.Log("Wire Length: " + wireLength.ToString()); 
-        
-        
-        int[] placement = new int[2];
-        placement[0] = x;
-        placement[1] = y;
-
-        int attempts = 0;
-
-        while((placement[0] == x && placement[1] == y) && attempts < 10) {//wires overlapped
-            //get a placement that is inside the boundaries
-            while(!isInsideBoundary(x, y, wireLength, direction)){
-                // Debug.Log("Outside");
-                direction =  1 + random.Next(3); 
-                wire = middleCache.GetOrInstantiate(middleWires.Sample());
-                wireLength = middleWireLengthDict[wire.name.Replace("(Clone)", "")];
-            }
-            //check to see if placement overlaps
-            placement = visitHoles(visited, x, y, wireLength, direction);
-            attempts = attempts + 1;
-        }
-        
-        
-       
-
-        if(!(placement[0] == x && placement[1] == y)){  //new placement was found, place the wire
-            if(y > 4){ //offset for the center line of breadboard where there are no holes 
-                y = y + 2;
-            }
-
-            wire.transform.position = new Vector3(middleBottomLeftX + (horizontalHoleDistance*x), middleBottomLeftY + (verticalHoleDistance*y), wireZ);
-            wire.transform.rotation = Quaternion.Euler(0, 0, 90*direction);  // ensure rotated properly
-        }
-
-        printVisited(visited);
-
-        
-
-		
-		return placement;
-    }
-
-    protected int[] placeRandomBottomEdgeWire(int[,] visited){
-        int powerRailX = random.Next(50);  // randomly pick which part of the power rail to start the circuit
-
-        int holeNumber = ((powerRailX/5)+powerRailX) + 2; // hole number out of 63 that aligns with the railNumber
-
-        var bottomEdgeWire = edgeCache.GetOrInstantiate(outsideRailList[random.Next(4)]);
-        bottomEdgeWire.transform.position = new Vector3(middleBottomLeftX +  ((holeNumber)*verticalHoleDistance), outsideBottomRailY , wireZ);
-        bottomEdgeWire.transform.rotation = Quaternion.Euler(0, 0, 0);
-       
-        int numHolesOccupied = outsideRailLengthDict[bottomEdgeWire.name.Replace("(Clone)", "")];
-        visitHoles(visited, holeNumber, 0, numHolesOccupied, 2);
-
-        int[] placement = new int[2];
-        placement[0] = holeNumber;
-        placement[1] = numHolesOccupied;
-		
-		return placement;
-    }
+    
+    
 
 
     // returns ending x and y. if it overlapped, returns the original x and y
     protected static int[] visitHoles(int[,] visited, int startingX, int startingY, int wireLength, int direction){
-		// visited[startingX,startingY] = 1;
-        // Debug.Log("VISITING");
-        // Debug.Log("X: " + startingX.ToString());
-        // Debug.Log("Y: " + startingY.ToString());
-        // Debug.Log("Direction: " + direction.ToString());
-        // Debug.Log("Wire Length: " + wireLength.ToString());
 
         int endingX = startingX;
         int endingY = startingY;
@@ -276,7 +196,7 @@ public class CircuitRandomizer : Randomizer
             endingPlacement[1] = startingY;
         }
         
-       
+    //    printVisited(visited);
         
 		return endingPlacement;
 	}
@@ -294,8 +214,214 @@ public class CircuitRandomizer : Randomizer
 				visitedStr += " middle ";
 			}
 		}
-        // Debug.Log(visitedStr);
+        Debug.Log(visitedStr);
 	}
+
+    protected void placeTopEdgeWire(int x, int wireLength){
+
+        bool found = false;
+        for(int i = 0; i < outsideRailList.Count; i++){
+            if(outsideRailLengthDict[outsideRailList[i].name] == wireLength){
+                var bottomEdgeWire = edgeCache.GetOrInstantiate(outsideRailList[i]);
+                bottomEdgeWire.transform.position = new Vector3(middleBottomLeftX +  ((x)*verticalHoleDistance), outsideTopRailY , wireZ);
+                bottomEdgeWire.transform.rotation = Quaternion.Euler(0, 0, 180);
+                found = true;
+            }
+        }
+        if(!found){
+            throw new Exception("Edge wire with length " + wireLength.ToString() + " was not found");
+        }
+    }
+
+    protected void placeBottomEdgeWire(int x, int wireLength){
+
+        bool found = false;
+        for(int i = 0; i < outsideRailList.Count; i++){
+            if(outsideRailLengthDict[outsideRailList[i].name] == wireLength){
+                var bottomEdgeWire = edgeCache.GetOrInstantiate(outsideRailList[i]);
+                bottomEdgeWire.transform.position = new Vector3(middleBottomLeftX +  ((x)*verticalHoleDistance), outsideBottomRailY , wireZ);
+                bottomEdgeWire.transform.rotation = Quaternion.Euler(0, 0, 0);
+                found = true;
+            }
+        }
+        if(!found){
+            throw new Exception("Edge wire with length " + wireLength.ToString() + " was not found");
+        }
+    }
+
+    protected void placeCenterWire(int x, int y, int wireLength, int direction){
+
+        bool found = false;
+        // Add the wires to the lists representing the wires allowed for certain positions
+        for (var i = 0; i < middleWires.GetCategoryCount(); i++){
+            GameObject wire = middleWires.GetCategory(i);
+            
+            if(middleWireLengthDict[wire.name] == wireLength){
+                var middleWire = middleCache.GetOrInstantiate(wire);
+                if(y > 4){ //offset for the center line of breadboard where there are no holes 
+                    y = y + 2;
+                }
+
+                middleWire.transform.position = new Vector3(middleBottomLeftX + (horizontalHoleDistance*x), middleBottomLeftY + (verticalHoleDistance*y), wireZ);
+                middleWire.transform.rotation = Quaternion.Euler(0, 0, 90*direction);  // ensure rotated properly
+                found = true;
+            }
+        }
+        if(!found){
+            throw new Exception("Middle wire with length " + wireLength.ToString() + " was not found");
+        }
+    }
+
+    /// <summary>
+    /// Method <c>placeCircuit()</c> 
+    /// places circuit components based on array created by findCircuit
+    /// </summary>
+    /// <returns> void </returns>
+    protected void placeCircuit(List<int[]> placements){
+        // for(int i = 0; i < placements.Count; i++){
+        //    Debug.Log("x: " + placements[i][0].ToString() + ", y: " + placements[i][1].ToString() + ", length: " + placements[i][2].ToString() + ", direction: " + placements[i][3].ToString()); 
+        // }
+
+        //place first edge wire
+
+        int[] edgeWire = placements[0];
+
+        placeBottomEdgeWire(edgeWire[0], edgeWire[2]);
+
+
+        //place middle wires
+        for(int i = 1; i < placements.Count - 1; i++){
+            placeCenterWire(placements[i][0], placements[i][1], placements[i][2], placements[i][3]);
+        }
+
+        //place top wire
+        int index = placements.Count - 1;
+        placeTopEdgeWire(placements[index][0],placements[index][2]);
+        
+    }
+
+    /// <summary>
+    /// Method <c>findCircuit()</c> 
+    /// generates the wire placements for a connected circuit
+    /// </summary>
+    /// <returns> int[,] an array of arrays in the format [x, y, length, direction] </returns>
+    protected List<int[]> findCircuit(){
+        Debug.Log("Finding Circuit");
+        int[,] visited = new int[63, 10];
+        // int[,] circuit = new int[1,4];
+        List<int[]> circuit = new List<int[]>();
+
+        // random edge wire.
+        int holeNumber = random.Next(50);
+        int x = ((holeNumber/5)+holeNumber) + 2;
+        int y = 0;
+        int direction = 2; //North
+        int wireLength = random.Next(4) + 1; //fill up 1-4 of holes
+        int[] edgeWire = new int[4] {x, y, wireLength, direction};
+        visitHoles(visited, x, y, wireLength, direction);
+        circuit.Add(edgeWire);
+
+        // random middle wires
+        
+
+        // x = x;
+        y = 4 - random.Next(5 - wireLength);
+        wireLength = lengthWeights[random.Next(35)];
+        direction = 1 + 2 * random.Next(2);
+
+
+        int[] placement = new int[2];
+        placement[0] = x;
+        placement[1] = y;
+
+        int attempts = 0;
+
+        for(int i = 0; i < 14; i++){
+            // get length and direction thats inside boundary
+            bool overlaps = true;
+            attempts = 0;
+            Debug.Log("Ending Placement: " + placement[0].ToString() + ", " + placement[1].ToString());
+            while(overlaps && attempts < 5){
+                Debug.Log("Attempt " + attempts.ToString());
+                while(!isInsideBoundary(x, y, wireLength, direction)){
+                    direction =  1 + random.Next(3); 
+                    wireLength = lengthWeights[random.Next(35)];
+                    x = placement[0];
+                    if(placement[1] < 5){
+                        while(y == placement[1]){
+                            y = random.Next(5);
+                        }
+                    }
+                    else{
+                        while(y == placement[1]){
+                            y = 5 + random.Next(4);
+                        }
+                    }
+                }
+                Debug.Log("Attempting x: " + x.ToString() + ", y: " + y.ToString() + ", length: " + wireLength.ToString() + ", direction: " + direction.ToString() + "Termination: " +placement[0].ToString() + ", " + placement[1].ToString()); 
+
+                // if it overlaps try again
+                // check to see if placement overlaps
+                placement = visitHoles(visited, x, y, wireLength, direction);
+                attempts = attempts + 1;
+
+                if(!(placement[0] == x && placement[1] == y)){  //new placement was found, place the wire
+                    overlaps = false;  
+
+                }
+                else{
+                    direction =  1 + random.Next(3); 
+                    wireLength = lengthWeights[random.Next(35)];
+                    x = placement[0];
+                    if(placement[1] < 5){
+                        y = random.Next(5);
+                        while(y == placement[1]){
+                            y = random.Next(5);
+                        }
+                    }
+                    else{
+                        y = 5 + random.Next(4);
+                        while(y == placement[1]){
+                            y = 5 + random.Next(4);
+                        }
+                    }
+                }
+            }
+            
+            if(!overlaps){
+                int[] middleWire = new int[4] {x, y, wireLength, direction};
+                Debug.Log("Placing x: " + x.ToString() + ", y: " + y.ToString() + ", length: " + wireLength.ToString() + ", direction: " + direction.ToString() + "Termination: " +placement[0].ToString() + ", " + placement[1].ToString()); 
+
+                circuit.Add(middleWire);
+            }
+            
+
+            // new random wire placement from last termination point
+            x = placement[0];
+            if(placement[1] < 5){
+                y = random.Next(5);
+                while(y == placement[1]){
+                    y = random.Next(5);
+                }
+            }
+            else{
+                y = 5 + random.Next(4);
+                while(y == placement[1]){
+                    y = 5 + random.Next(4);
+                }
+            }
+            direction =  1 + random.Next(3); 
+            wireLength = 2 + random.Next(9);
+
+        }
+
+        int[] testWire = new int[4] {4, 0, 1 + random.Next(4), 1};
+        circuit.Add(testWire);
+
+
+        printVisited(visited);
+        return circuit;
+    }
 
     /// <inheritdoc/> 
     protected override void OnAwake()
@@ -334,63 +460,9 @@ public class CircuitRandomizer : Randomizer
     /// </summary>
     protected override void OnIterationStart()
     {  
-        int[,] visited = new int[63,10];
-        // Debug.Log(breadboard.GetCategoryCount());
-        //place and scale breadboard 
-        var breadboardInstance = breadboardCache.GetOrInstantiate(breadboard.Sample()); 
-        breadboardInstance.transform.position = new Vector3(0, 0, 0);
-        breadboardInstance.transform.rotation = Quaternion.Euler(0, 90, -90);
-        breadboardInstance.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
+        List<int[]> circuit = findCircuit();
+        placeCircuit(circuit);
         
-        int[] firstPlacement = placeRandomBottomEdgeWire(visited);
-        
-		printVisited(visited);
-
-        int currentPosition = firstPlacement[0];
-        int holesTaken = firstPlacement[1];
-        int nextY = 4 - random.Next(5 - holesTaken);
-        
-        
-        var middleWire = middleCache.GetOrInstantiate(middleWires.Sample());
-        int[] endingPlacement = placeMiddleWire(visited, middleWire, currentPosition, nextY);
-        int[] lastEndingPlacement = new int[2];
-        // Debug.Log("Ending Placement 1:");
-        // Debug.Log(endingPlacement[0]);
-        // Debug.Log(endingPlacement[1]);
-
-        int maxWires = 15;
-        for(int i = 0; i < maxWires; i++){
-            if(endingPlacement[1] < 5){ // bottom half
-                nextY = random.Next(5);
-                while(nextY == endingPlacement[1]){ //ensure the selection of a different hole than when the last wire terminated
-                    nextY = random.Next(5);
-                }
-                
-            }
-            else{ // top half
-                nextY = 5 + random.Next(5);
-                while(nextY == endingPlacement[1]){
-                    nextY = 5 + random.Next(5);
-                }
-            }
-            middleWire = middleCache.GetOrInstantiate(middleWires.Sample());
-            endingPlacement = placeMiddleWire(visited, middleWire, endingPlacement[0], nextY);
-            if(endingPlacement[0] == lastEndingPlacement[0] && endingPlacement[1] == lastEndingPlacement[1]){
-                Debug.Log("Couldn't find placement");
-                i = maxWires;
-            }
-            lastEndingPlacement = endingPlacement;
-            // Debug.Log("Last Ending Placement " + i.ToString());
-            // Debug.Log(lastEndingPlacement[0]);
-            // Debug.Log(lastEndingPlacement[1]);
-            // Debug.Log("New Ending Placement " + i.ToString());
-            // Debug.Log(endingPlacement[0]);
-            // Debug.Log(endingPlacement[1]);
-        }
-
-       
-        
-
     } 
 
     /// <summary>
