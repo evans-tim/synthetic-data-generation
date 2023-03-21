@@ -83,13 +83,17 @@ public class CircuitRandomizer : Randomizer
         2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10,
     };
 
+    /// <summary>
+    /// Method <c>isAlignedWithRail()</c> 
+    /// Checks to see if a wire is in the right x position to be aligned with the power rail.
+    /// </summary>
     protected bool isAlignedWithRail(int xPos){
         //7, 13, 19, 25
         return (xPos - 1) % 6 != 0 && xPos > 1 && xPos < 61;
     }
 
     /// <summary>
-    /// Method <c>checkBoundary()</c> 
+    /// Method <c>isInsideBoundary()</c> 
     /// Checks to see if a wire will stay on breadboard or cross the middle gap correctly.
     /// </summary>
     protected bool isInsideBoundary(int xPos, int yPos, int length, int direction){
@@ -138,7 +142,11 @@ public class CircuitRandomizer : Randomizer
     
 
 
-    // returns ending x and y. if it overlapped, returns the original x and y
+    /// <summary>
+    /// Method <c>visitHoles()</c> 
+    /// update visited array with the holes that the wire will span
+    /// </summary>
+    /// <returns> int[] ending x and y. if it overlapped, returns the original x and y </returns>
     protected static int[] visitHoles(int[,] visited, int startingX, int startingY, int wireLength, int direction){
 
         int endingX = startingX;
@@ -230,7 +238,11 @@ public class CircuitRandomizer : Randomizer
 		}
         Debug.Log(visitedStr);
 	}
-
+    /// <summary>
+    /// Method <c>placeTopEdgeWire()</c> 
+    /// instantiate a wire prefab and place it at the top edge of the breadboard into the top rail
+    /// </summary>
+    /// <returns> void </returns>
     protected void placeTopEdgeWire(int x, int wireLength){
 
         bool found = false;
@@ -246,7 +258,11 @@ public class CircuitRandomizer : Randomizer
             throw new Exception("Edge wire with length " + wireLength.ToString() + " was not found");
         }
     }
-
+     /// <summary>
+    /// Method <c>placeBottomEdgeWire()</c> 
+    /// instantiate a wire prefab and place it at the bottom edge of the breadboard into the bottom rail
+    /// </summary>
+    /// <returns> void </returns>
     protected void placeBottomEdgeWire(int x, int wireLength){
 
         bool found = false;
@@ -262,7 +278,11 @@ public class CircuitRandomizer : Randomizer
             throw new Exception("Edge wire with length " + wireLength.ToString() + " was not found");
         }
     }
-
+     /// <summary>
+    /// Method <c>placeCenterWire()</c> 
+    /// instantiate a wire prefab and place it in the center of the breadboard
+    /// </summary>
+    /// <returns> void </returns>
     protected void placeCenterWire(int x, int y, int wireLength, int direction){
 
         bool found = false;
