@@ -218,26 +218,9 @@ public class CircuitRandomizer : Randomizer
             endingPlacement[1] = startingY;
         }
         
-    //    printVisited(visited);
-        
 		return endingPlacement;
 	}
 
-    protected static void printVisited(int[,] visited){
-        string visitedStr = "";
-		for(int i = visited.GetLength(1) - 1; i >= 0 ; i--){
-			for(int j = 0; j < visited.GetLength(0); j++){
-				//Debug.Log(visited[j,i]);
-                int hole = visited[j,i];
-                visitedStr += hole.ToString();
-			}
-            visitedStr += " end ";
-			if(i == 5){
-				visitedStr += " middle ";
-			}
-		}
-        Debug.Log(visitedStr);
-	}
     /// <summary>
     /// Method <c>placeTopEdgeWire()</c> 
     /// instantiate a wire prefab and place it at the top edge of the breadboard into the top rail
@@ -487,8 +470,6 @@ public class CircuitRandomizer : Randomizer
        
         Debug.Log("FOUND PATH?");
         Debug.Log(foundPath);
-
-        printVisited(visited);
         return circuit;
     }
 
