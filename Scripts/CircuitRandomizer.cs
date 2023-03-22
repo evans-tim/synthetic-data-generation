@@ -40,11 +40,7 @@ public class CircuitRandomizer : Randomizer
     float verticalHoleDistance = 0.635f; // y distance between each breadboard hole (3.532 - -3.461) / 11
     float horizontalHoleDistance =  0.635f;  // x distance between each breadboard hole (19.685 - -19.694) / 62 
 
-    // float railRightX = 18.4f; //furthest right rail position x value
-
-    // float insideBottomRailY =  -5.08f;  // inside rail on the bottom y value
     float outsideBottomRailY = -5.74f;  // outside rail on the bottom y value
-    // float insideTopRailY =  5.08f;  // inside rail on the bottom y value
     float outsideTopRailY = 5.70f;  // outside rail on the bottom y value
     float wireZ = -0.26f;  //z value for all wires and resistors
 
