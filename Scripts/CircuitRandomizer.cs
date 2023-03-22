@@ -75,6 +75,7 @@ public class CircuitRandomizer : Randomizer
                                   {"22mm63", 10},
                                    };
 
+    // give higher chance medium length wires
     int[] lengthWeights = new int[35] {
         2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10,
     };
