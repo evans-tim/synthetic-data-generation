@@ -292,10 +292,6 @@ public class CircuitRandomizer : Randomizer
     /// </summary>
     /// <returns> void </returns>
     protected void placeCircuit(List<int[]> placements){
-        // for(int i = 0; i < placements.Count; i++){
-        //    Debug.Log("x: " + placements[i][0].ToString() + ", y: " + placements[i][1].ToString() + ", length: " + placements[i][2].ToString() + ", direction: " + placements[i][3].ToString()); 
-        // }
-
         //place first edge wire
 
         int[] edgeWire = placements[0];
